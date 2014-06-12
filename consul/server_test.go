@@ -3,12 +3,13 @@ package consul
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/consul/testutil"
 	"io/ioutil"
 	"net"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/consul/testutil"
 )
 
 var nextPort = 15000
@@ -38,7 +39,7 @@ func testServerConfig(t *testing.T, NodeName string) (string, *Config) {
 	config := DefaultConfig()
 
 	config.NodeName = NodeName
-	config.Bootstrap = true
+	config.Bootstrap = 1
 	config.Datacenter = "dc1"
 	config.DataDir = dir
 	config.RPCAddr = &net.TCPAddr{
@@ -72,10 +73,10 @@ func testServer(t *testing.T) (string, *Server) {
 }
 
 func testServerDC(t *testing.T, dc string) (string, *Server) {
-	return testServerDCBootstrap(t, dc, true)
+	return testServerDCBootstrap(t, dc, 1)
 }
 
-func testServerDCBootstrap(t *testing.T, dc string, bootstrap bool) (string, *Server) {
+func testServerDCBootstrap(t *testing.T, dc string, bootstrap int) (string, *Server) {
 	name := fmt.Sprintf("Node %d", getPort())
 	dir, config := testServerConfig(t, name)
 	config.Datacenter = dc
@@ -196,7 +197,7 @@ func TestServer_Leave(t *testing.T) {
 	defer s1.Shutdown()
 
 	// Second server not in bootstrap mode
-	dir2, s2 := testServerDCBootstrap(t, "dc1", false)
+	dir2, s2 := testServerDCBootstrap(t, "dc1", 0)
 	defer os.RemoveAll(dir2)
 	defer s2.Shutdown()
 
@@ -260,7 +261,7 @@ func TestServer_JoinLAN_TLS(t *testing.T) {
 	defer s1.Shutdown()
 
 	dir2, conf2 := testServerConfig(t, "b.testco.internal")
-	conf2.Bootstrap = false
+	conf2.Bootstrap = 0
 	conf2.VerifyIncoming = true
 	conf2.VerifyOutgoing = true
 	configureTLS(conf2)
@@ -303,4 +304,67 @@ func TestServer_JoinLAN_TLS(t *testing.T) {
 	}, func(err error) {
 		t.Fatalf("no peer established")
 	})
+}
+
+func TestServer_AutoBootstrap(t *testing.T) {
+	// our bootstrap server
+	// after 3 nodes, stop being a bootstrap server
+	dir1, s1 := testServerDCBootstrap(t, "dc1", 3)
+	defer os.RemoveAll(dir1)
+	defer s1.Shutdown()
+
+	// Second server not in bootstrap mode
+	dir2, s2 := testServerDCBootstrap(t, "dc1", 0)
+	defer os.RemoveAll(dir2)
+	defer s2.Shutdown()
+
+	// Third server not in bootstrap mode
+	dir3, s3 := testServerDCBootstrap(t, "dc1", 0)
+	defer os.RemoveAll(dir3)
+	defer s3.Shutdown()
+
+	// Try to join
+	addr := fmt.Sprintf("127.0.0.1:%d",
+		s1.config.SerfLANConfig.MemberlistConfig.BindPort)
+	if _, err := s2.JoinLAN([]string{addr}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if _, err := s3.JoinLAN([]string{addr}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	var p1 []net.Addr
+	var p2 []net.Addr
+	var p3 []net.Addr
+
+	testutil.WaitForResult(func() (bool, error) {
+		p1, _ = s1.raftPeers.Peers()
+		return len(p1) == 3, errors.New(fmt.Sprintf("%v", p1))
+	}, func(err error) {
+		t.Fatalf("should have 3 peers: %v", err)
+	})
+
+	testutil.WaitForResult(func() (bool, error) {
+		p2, _ = s2.raftPeers.Peers()
+		return len(p2) == 3, errors.New(fmt.Sprintf("%v", p1))
+	}, func(err error) {
+		t.Fatalf("should have 3 peers: %v", err)
+	})
+
+	testutil.WaitForResult(func() (bool, error) {
+		p3, _ = s3.raftPeers.Peers()
+		return len(p3) == 3, errors.New(fmt.Sprintf("%v", p1))
+	}, func(err error) {
+		t.Fatalf("should have 3 peers: %v", err)
+	})
+
+	// Check that s1 is no longer in bootstrap mode
+	if s1.config.Bootstrap != 0 {
+		t.Fatalf("should not be in bootstrap mode: current state is %v", s1.config.Bootstrap)
+	}
+
+	// check that the raft got updated too
+	if s1.config.RaftConfig.EnableSingleNode {
+		t.Fatal("raft is still in single node mode!")
+	}
 }

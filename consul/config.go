@@ -42,7 +42,7 @@ type Config struct {
 	// Bootstrap mode is used to bring up the first Consul server.
 	// It is required so that it can elect a leader without any
 	// other nodes being present
-	Bootstrap bool
+	Bootstrap int
 
 	// Datacenter is the datacenter this Consul server represents
 	Datacenter string

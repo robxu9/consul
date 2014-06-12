@@ -1,13 +1,14 @@
 package consul
 
 import (
+	"net"
+	"strconv"
+	"time"
+
 	"github.com/armon/go-metrics"
 	"github.com/hashicorp/consul/consul/structs"
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/serf/serf"
-	"net"
-	"strconv"
-	"time"
 )
 
 const (
@@ -375,6 +376,27 @@ func (s *Server) joinConsulServer(m serf.Member, parts *serverParts) error {
 		s.logger.Printf("[ERR] consul: failed to add raft peer: %v", err)
 		return err
 	}
+
+	// If we are in bootstrap mode, then check how many server nodes we have.
+	// If we have > n [specified in config], stop acting like a bootstrap node
+	if s.config.Bootstrap >= 3 {
+		count := 0
+		for _, member := range s.serfLAN.Members() {
+			if server, _ := isConsulServer(member); server {
+				count++
+			}
+		}
+
+		if count >= s.config.Bootstrap {
+			// we need to unbootstrap outselves.
+			s.config.Bootstrap = 0
+
+			// make sure raft knows that we're not doing a single node election now
+			// so that on the next heartbeat others can get elected
+			s.config.RaftConfig.EnableSingleNode = false
+		}
+	}
+
 	return nil
 }
 

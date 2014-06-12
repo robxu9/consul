@@ -4,8 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/consul/consul"
-	"github.com/mitchellh/mapstructure"
 	"io"
 	"net"
 	"os"
@@ -13,6 +11,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/consul/consul"
+	"github.com/mitchellh/mapstructure"
 )
 
 // Ports is used to simplify the configuration by
@@ -62,7 +63,7 @@ type DNSConfig struct {
 type Config struct {
 	// Bootstrap is used to bring up the first Consul server, and
 	// permits that node to elect itself leader
-	Bootstrap bool `mapstructure:"bootstrap"`
+	Bootstrap int `mapstructure:"bootstrap"`
 
 	// Server controls if this agent acts like a Consul server,
 	// or merely as a client. Servers have more state, take part
@@ -214,7 +215,7 @@ type dirEnts []os.FileInfo
 // DefaultConfig is used to return a sane default configuration
 func DefaultConfig() *Config {
 	return &Config{
-		Bootstrap:  false,
+		Bootstrap:  0,
 		Server:     false,
 		Datacenter: consul.DefaultDC,
 		Domain:     "consul.",
@@ -442,8 +443,8 @@ func MergeConfig(a, b *Config) *Config {
 	var result Config = *a
 
 	// Copy the strings if they're set
-	if b.Bootstrap {
-		result.Bootstrap = true
+	if b.Bootstrap != 0 {
+		result.Bootstrap = b.Bootstrap
 	}
 	if b.Datacenter != "" {
 		result.Datacenter = b.Datacenter

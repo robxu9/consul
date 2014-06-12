@@ -4,9 +4,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/raft"
-	"github.com/hashicorp/raft-mdb"
-	"github.com/hashicorp/serf/serf"
 	"log"
 	"net"
 	"net/rpc"
@@ -17,6 +14,10 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/hashicorp/raft"
+	"github.com/hashicorp/raft-mdb"
+	"github.com/hashicorp/serf/serf"
 )
 
 // These are the protocol versions that Consul can _understand_. These are
@@ -230,7 +231,7 @@ func (s *Server) setupSerf(conf *serf.Config, ch chan serf.Event, path string, w
 	conf.Tags["vsn_max"] = fmt.Sprintf("%d", ProtocolVersionMax)
 	conf.Tags["build"] = s.config.Build
 	conf.Tags["port"] = fmt.Sprintf("%d", addr.Port)
-	if s.config.Bootstrap {
+	if s.config.Bootstrap != 0 {
 		conf.Tags["bootstrap"] = "1"
 	}
 	conf.MemberlistConfig.LogOutput = s.config.LogOutput
@@ -253,7 +254,7 @@ func (s *Server) setupSerf(conf *serf.Config, ch chan serf.Event, path string, w
 // setupRaft is used to setup and initialize Raft
 func (s *Server) setupRaft() error {
 	// If we are in bootstrap mode, enable a single node cluster
-	if s.config.Bootstrap {
+	if s.config.Bootstrap != 0 {
 		s.config.RaftConfig.EnableSingleNode = true
 	}
 
@@ -300,7 +301,7 @@ func (s *Server) setupRaft() error {
 	s.raftPeers = raft.NewJSONPeers(path, trans)
 
 	// Ensure local host is always included if we are in bootstrap mode
-	if s.config.Bootstrap {
+	if s.config.Bootstrap != 0 {
 		peers, err := s.raftPeers.Peers()
 		if err != nil {
 			store.Close()

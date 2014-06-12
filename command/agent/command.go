@@ -3,10 +3,6 @@ package agent
 import (
 	"flag"
 	"fmt"
-	"github.com/armon/go-metrics"
-	"github.com/hashicorp/go-syslog"
-	"github.com/hashicorp/logutils"
-	"github.com/mitchellh/cli"
 	"io"
 	"net"
 	"os"
@@ -16,6 +12,11 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/armon/go-metrics"
+	"github.com/hashicorp/go-syslog"
+	"github.com/hashicorp/logutils"
+	"github.com/mitchellh/cli"
 )
 
 // gracefulTimeout controls how long we wait before forcefully terminating
@@ -61,7 +62,7 @@ func (c *Command) readConfig() *Config {
 	cmdFlags.StringVar(&cmdConfig.PidFile, "pid-file", "", "path to file to store PID")
 
 	cmdFlags.BoolVar(&cmdConfig.Server, "server", false, "run agent as server")
-	cmdFlags.BoolVar(&cmdConfig.Bootstrap, "bootstrap", false, "enable server bootstrap mode")
+	cmdFlags.IntVar(&cmdConfig.Bootstrap, "bootstrap", 0, "enable server bootstrap mode")
 
 	cmdFlags.StringVar(&cmdConfig.ClientAddr, "client", "", "address to bind client listeners to (DNS, HTTP, RPC)")
 	cmdFlags.StringVar(&cmdConfig.BindAddr, "bind", "", "address to bind server listeners to")
@@ -122,13 +123,13 @@ func (c *Command) readConfig() *Config {
 	}
 
 	// Only allow bootstrap mode when acting as a server
-	if config.Bootstrap && !config.Server {
+	if config.Bootstrap != 0 && !config.Server {
 		c.Ui.Error("Bootstrap mode cannot be enabled when server mode is not enabled")
 		return nil
 	}
 
 	// Warn if we are in bootstrap mode
-	if config.Bootstrap {
+	if config.Bootstrap != 0 {
 		c.Ui.Error("WARNING: Bootstrap mode enabled! Do not enable unless necessary")
 	}
 
@@ -512,7 +513,7 @@ Usage: consul agent [options]
 Options:
 
   -advertise=addr          Sets the advertise address to use
-  -bootstrap               Sets server to bootstrap mode
+  -bootstrap=0             Sets server to bootstrap mode
   -bind=0.0.0.0            Sets the bind address for cluster communication
   -client=127.0.0.1        Sets the address to bind for client access.
                            This includes RPC, DNS and HTTP

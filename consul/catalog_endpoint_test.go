@@ -2,14 +2,15 @@ package consul
 
 import (
 	"fmt"
-	"github.com/hashicorp/consul/consul/structs"
-	"github.com/hashicorp/consul/testutil"
 	"net/rpc"
 	"os"
 	"sort"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/consul/consul/structs"
+	"github.com/hashicorp/consul/testutil"
 )
 
 func TestCatalogRegister(t *testing.T) {
@@ -238,7 +239,7 @@ func TestCatalogListNodes_StaleRaad(t *testing.T) {
 	client1 := rpcClient(t, s1)
 	defer client1.Close()
 
-	dir2, s2 := testServerDCBootstrap(t, "dc1", false)
+	dir2, s2 := testServerDCBootstrap(t, "dc1", 0)
 	defer os.RemoveAll(dir2)
 	defer s2.Shutdown()
 	client2 := rpcClient(t, s2)
@@ -302,7 +303,7 @@ func TestCatalogListNodes_ConsistentRead_Fail(t *testing.T) {
 	client1 := rpcClient(t, s1)
 	defer client1.Close()
 
-	dir2, s2 := testServerDCBootstrap(t, "dc1", false)
+	dir2, s2 := testServerDCBootstrap(t, "dc1", 0)
 	defer os.RemoveAll(dir2)
 	defer s2.Shutdown()
 	client2 := rpcClient(t, s2)
@@ -352,7 +353,7 @@ func TestCatalogListNodes_ConsistentRead(t *testing.T) {
 	client1 := rpcClient(t, s1)
 	defer client1.Close()
 
-	dir2, s2 := testServerDCBootstrap(t, "dc1", false)
+	dir2, s2 := testServerDCBootstrap(t, "dc1", 0)
 	defer os.RemoveAll(dir2)
 	defer s2.Shutdown()
 	client2 := rpcClient(t, s2)

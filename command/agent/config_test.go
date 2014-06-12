@@ -79,7 +79,7 @@ func TestDecodeConfig(t *testing.T) {
 	}
 
 	// Server bootstrap
-	input = `{"server": true, "bootstrap": true}`
+	input = `{"server": true, "bootstrap": 1}`
 	config, err = DecodeConfig(bytes.NewReader([]byte(input)))
 	if err != nil {
 		t.Fatalf("err: %s", err)
@@ -89,7 +89,7 @@ func TestDecodeConfig(t *testing.T) {
 		t.Fatalf("bad: %#v", config)
 	}
 
-	if !config.Bootstrap {
+	if config.Bootstrap != 1 {
 		t.Fatalf("bad: %#v", config)
 	}
 
@@ -422,7 +422,7 @@ func TestDecodeConfig_Check(t *testing.T) {
 
 func TestMergeConfig(t *testing.T) {
 	a := &Config{
-		Bootstrap:              false,
+		Bootstrap:              0,
 		Datacenter:             "dc1",
 		DataDir:                "/tmp/foo",
 		DNSRecursor:            "127.0.0.1:1001",
@@ -440,7 +440,7 @@ func TestMergeConfig(t *testing.T) {
 	}
 
 	b := &Config{
-		Bootstrap:   true,
+		Bootstrap:   1,
 		Datacenter:  "dc2",
 		DataDir:     "/tmp/bar",
 		DNSRecursor: "127.0.0.2:1001",

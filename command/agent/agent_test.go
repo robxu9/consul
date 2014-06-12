@@ -2,14 +2,15 @@ package agent
 
 import (
 	"fmt"
-	"github.com/hashicorp/consul/consul"
-	"github.com/hashicorp/consul/consul/structs"
 	"io"
 	"io/ioutil"
 	"os"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/consul/consul"
+	"github.com/hashicorp/consul/consul/structs"
 )
 
 var offset uint64
@@ -19,7 +20,7 @@ func nextConfig() *Config {
 	conf := DefaultConfig()
 
 	conf.AdvertiseAddr = "127.0.0.1"
-	conf.Bootstrap = true
+	conf.Bootstrap = 1
 	conf.Datacenter = "dc1"
 	conf.NodeName = fmt.Sprintf("Node %d", idx)
 	conf.BindAddr = "127.0.0.1"

@@ -2,8 +2,6 @@ package command
 
 import (
 	"fmt"
-	"github.com/hashicorp/consul/command/agent"
-	"github.com/hashicorp/consul/consul"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -12,6 +10,9 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/consul/command/agent"
+	"github.com/hashicorp/consul/consul"
 )
 
 var offset uint64
@@ -72,7 +73,7 @@ func nextConfig() *agent.Config {
 	idx := int(atomic.AddUint64(&offset, 1))
 	conf := agent.DefaultConfig()
 
-	conf.Bootstrap = true
+	conf.Bootstrap = 1
 	conf.Datacenter = "dc1"
 	conf.NodeName = fmt.Sprintf("Node %d", idx)
 	conf.BindAddr = "127.0.0.1"

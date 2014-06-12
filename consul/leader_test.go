@@ -3,12 +3,13 @@ package consul
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/consul/consul/structs"
-	"github.com/hashicorp/consul/testutil"
-	"github.com/hashicorp/serf/serf"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/consul/consul/structs"
+	"github.com/hashicorp/consul/testutil"
+	"github.com/hashicorp/serf/serf"
 )
 
 func TestLeader_RegisterMember(t *testing.T) {
@@ -281,11 +282,11 @@ func TestLeader_LeftServer(t *testing.T) {
 	defer os.RemoveAll(dir1)
 	defer s1.Shutdown()
 
-	dir2, s2 := testServerDCBootstrap(t, "dc1", false)
+	dir2, s2 := testServerDCBootstrap(t, "dc1", 0)
 	defer os.RemoveAll(dir2)
 	defer s2.Shutdown()
 
-	dir3, s3 := testServerDCBootstrap(t, "dc1", false)
+	dir3, s3 := testServerDCBootstrap(t, "dc1", 0)
 	defer os.RemoveAll(dir3)
 	defer s3.Shutdown()
 	servers := []*Server{s1, s2, s3}
